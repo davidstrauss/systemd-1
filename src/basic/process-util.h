@@ -41,7 +41,7 @@
                         _r_ = ("/proc/self/" field);                    \
                 } else {                                                \
                         _r_ = alloca(strlen("/proc/") + DECIMAL_STR_MAX(pid_t) + 1 + sizeof(field)); \
-                        sprintf((char*) _r_, "/proc/"PID_FMT"/" field, _pid_);                       \
+                        sprintf((char*) _r_, "/proc/" PID_FMT "/" field, _pid_);                       \
                 }                                                       \
                 _r_;                                                    \
         })

@@ -1,8 +1,9 @@
-project('systemd', 'c',
+project('systemd', 'c', 'cpp',
         version : '235',
         license : 'LGPLv2+',
         default_options: [
                 'c_std=gnu99',
+                'cpp_std=c++14',
                 'prefix=/usr',
                 'sysconfdir=/etc',
                 'localstatedir=/var',
@@ -236,11 +237,8 @@ cc = meson.get_compiler('c')
 pkgconfig = import('pkgconfig')
 check_compilation_sh = find_program('tools/meson-check-compilation.sh')
 
-cxx = find_program('c++', required : false)
-if cxx.found()
-        #  Used only for tests
-        add_languages('cpp')
-endif
+cxx = find_program('c++', required : true)
+add_languages('cpp')
 
 foreach arg : ['-Wextra',
                '-Wundef',
@@ -290,9 +288,11 @@ foreach arg : ['unused-parameter',
                'unused-result',
                'format-signedness',
                'error=nonnull', # work-around for gcc 7.1 turning this on on its own
+               'c++11-extensions',
               ]
         if cc.has_argument('-W' + arg)
                 add_project_arguments('-Wno-' + arg, language : 'c')
+                add_project_arguments('-Wno-' + arg, language : 'cpp')
         endif
 endforeach
 
@@ -1105,6 +1105,8 @@ includes = include_directories('src/basic',
 
 add_project_arguments('-include', 'config.h', language : 'c')
 
+add_project_arguments('-include', 'config.h', language : 'cpp')
+
 gcrypt_util_sources = files('src/shared/gcrypt-util.h',
                             'src/shared/gcrypt-util.c')
 
@@ -1884,13 +1886,17 @@ executable('systemd-sleep',
            install : true,
            install_dir : rootlibexecdir)
 
+boost = dependency('boost', modules : ['property_tree', 'program_options', 'algorithm', 'filesystem', 'system'])
+
 exe = executable('systemd-sysctl',
-                 'src/sysctl/sysctl.c',
+                 'src/sysctl/sysctl.cpp',
                  include_directories : includes,
                  link_with : [libshared],
                  install_rpath : rootlibexecdir,
                  install : true,
-                 install_dir : rootlibexecdir)
+                 install_dir : rootlibexecdir,
+                 dependencies : boost,
+                 override_options : ['cpp_std=c++14'])
 public_programs += [exe]
 
 executable('systemd-ac-power',
@@ -2351,7 +2357,7 @@ if git.found()
                 git,
                 ['--git-dir=@0@/.git'.format(meson.current_source_dir()),
                  'ls-files',
-                 ':/*.[ch]'])
+                 ':/*.(c|h|cpp|hpp)'])
         all_files = files(all_files.stdout().split())
 
         custom_target(

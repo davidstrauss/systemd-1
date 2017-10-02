@@ -70,14 +70,14 @@ typedef struct {
 
 /* Macros for type checking */
 #define PTR_COMPATIBLE_WITH_HASHMAP_BASE(h) \
-        (__builtin_types_compatible_p(typeof(h), HashmapBase*) || \
-         __builtin_types_compatible_p(typeof(h), Hashmap*) || \
-         __builtin_types_compatible_p(typeof(h), OrderedHashmap*) || \
-         __builtin_types_compatible_p(typeof(h), Set*))
+        (__builtin_types_compatible_p(__typeof__(h), HashmapBase*) || \
+         __builtin_types_compatible_p(__typeof__(h), Hashmap*) || \
+         __builtin_types_compatible_p(__typeof__(h), OrderedHashmap*) || \
+         __builtin_types_compatible_p(__typeof__(h), Set*))
 
 #define PTR_COMPATIBLE_WITH_PLAIN_HASHMAP(h) \
-        (__builtin_types_compatible_p(typeof(h), Hashmap*) || \
-         __builtin_types_compatible_p(typeof(h), OrderedHashmap*)) \
+        (__builtin_types_compatible_p(__typeof__(h), Hashmap*) || \
+         __builtin_types_compatible_p(__typeof__(h), OrderedHashmap*)) \
 
 #define HASHMAP_BASE(h) \
         __builtin_choose_expr(PTR_COMPATIBLE_WITH_HASHMAP_BASE(h), \

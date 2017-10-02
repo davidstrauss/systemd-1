@@ -21,6 +21,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+using namespace std;
+#endif
+
 #if SIZEOF_PID_T == 4
 #  define PID_PRI PRIi32
 #elif SIZEOF_PID_T == 2

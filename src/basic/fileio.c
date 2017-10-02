@@ -1508,13 +1508,13 @@ int read_nul_string(FILE *f, char **ret) {
         return 0;
 }
 
-int mkdtemp_malloc(const char *template, char **ret) {
+int mkdtemp_malloc(const char *tmpl, char **ret) {
         char *p;
 
-        assert(template);
+        assert(tmpl);
         assert(ret);
 
-        p = strdup(template);
+        p = strdup(tmpl);
         if (!p)
                 return -ENOMEM;
 
