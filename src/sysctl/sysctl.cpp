@@ -109,6 +109,8 @@ static std::error_code apply_all(const bpt::ptree &sysctl_options, const std::ve
                  * We only have to normalize them. */
                 auto value = sysctl_normalize_cpp(entry.second.data());
 
+                std::cout << "Applying: " << entry.first.data() << " = " << value << "\n";
+
                 k.assign(sysctl_write(entry.first.data(), value.c_str()), std::generic_category());
                 if (k) {
                         /* If the sysctl is not available in the kernel or we are running with reduced privileges and
@@ -133,20 +135,22 @@ static std::error_code parse_file(bpt::ptree &sysctl_options, const boost::files
         std::error_code r;
 
         log_debug("Parsing %s", path.c_str());
-        for (;;) {
-                try {
-                        bpt::read_ini(path.generic_string(), sysctl_options);
-                } catch (bpt::ini_parser_error pe) {
-                        // @TODO: Handle ENOENT (and possibly ignoring it) here.
-                        // log_error_errno(r, "Failed to open file '%s', ignoring: %m", path);
+        try {
+                std::cout << "Parsing start\n";
+                bpt::read_ini(path.generic_string(), sysctl_options);
+                std::cout << "Parsing end\n";
+        } catch (bpt::ini_parser_error pe) {
+                // @TODO: Handle ENOENT (and possibly ignoring it) here.
+                // log_error_errno(r, "Failed to open file '%s', ignoring: %m", path);
 
-                        log_debug("Error: %s at '%s:%lu'.", pe.message().c_str(), pe.filename().c_str(), pe.line());
-                        r.assign(EINVAL, std::generic_category());
-                        return r;
-                }
+                std::cout << "Error: " << pe.message() << "\n";
 
-                /* Filtering is now handled on applying the values. */
+                log_error("Error: %s at '%s:%lu'.", pe.message().c_str(), pe.filename().c_str(), pe.line());
+                r.assign(EINVAL, std::generic_category());
+                return r;
         }
+
+        /* Filtering is now handled on applying the values. */
 
         return r;
 }
@@ -154,12 +158,12 @@ static std::error_code parse_file(bpt::ptree &sysctl_options, const boost::files
 static std::error_code parse_argv(int argc, char *argv[], std::vector<std::string> &arg_conf_files, std::vector<std::string> &arg_prefixes) {
         std::error_code r;
 
-        bpo::options_description desc("Applies kernel sysctl settings:");
+        bpo::options_description desc("Applies kernel sysctl settings");
         desc.add_options()
                 ("help,h", "Show this help")
                 ("version", "Show package version")
                 ("prefix", bpo::value<std::vector<std::string>>(&arg_prefixes), "Only apply rules with the specified path prefix(es)")
-                ("configuration-file", bpo::value<std::vector<std::string>>(&arg_conf_files), "Path(s) to listing(s) of sysctl settings to apply");
+                ("configuration-file", bpo::value<std::vector<std::string>>(&arg_conf_files), "Path(s) of sysctl settings to apply");
 
         bpo::positional_options_description p;
         p.add("configuration-file", -1);
@@ -222,12 +226,20 @@ int main(int argc, char *argv[]) {
                 // @TODO: Add better error handling or trap exceptions if it's
                 // not a directory or unreadable.
 
-                for (auto& f : bf::directory_iterator(p)) {
-                        k = parse_file(sysctl_options, f.path(), true);
-                        if (k && !r)
-                                r = k;
+                if (!bf::is_directory(p)) {
+                        r.assign(EINVAL, std::generic_category());
+                        log_error_errno(r.value(), "Not a directory: %s", p.c_str());
+                } else {
+                        for (auto& f : bf::directory_iterator(p)) {
+                                std::cout << "Pulling in file: " << f.path() << "\n";
+                                k = parse_file(sysctl_options, f.path(), true);
+                                if (k && !r)
+                                        r = k;
+                        }
                 }
         }
+
+        std::cout << "Applying...\n";
 
         k = apply_all(sysctl_options, arg_prefixes);
         if (k && !r)
