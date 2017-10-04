@@ -154,7 +154,7 @@ static std::error_code parse_file(bpt::ptree &sysctl_options, const boost::files
 static std::error_code parse_argv(int argc, char *argv[], std::vector<std::string> &arg_conf_files, std::vector<std::string> &arg_prefixes) {
         std::error_code r;
 
-        bpo::options_description desc("Applies kernel sysctl settings.");
+        bpo::options_description desc("Applies kernel sysctl settings:");
         desc.add_options()
                 ("help,h", "Show this help")
                 ("version", "Show package version")
